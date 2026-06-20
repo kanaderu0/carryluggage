@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>CarryIt</title>
+        <style>
+            body {
+                margin: 0;
+                overflow: hidden; /* スクロールバーが出ないようにする */
+            }
+            canvas {
+                display: block; /* 余分な余白を消す */
+                background-color: #f0f0f0; /* 見やすくするために背景色を設定 */
+            }
+            #game-container {
+                position: relative;
+                width: 100vw;
+                height: 100vh;
+            }
+            #ui {
+                position: absolute;
+                left: 50%;
+                bottom: 20px;
+                transform: translateX(-50%);
+                text-align: center;
+            }
+
+            #ui .row {
+                margin: 5px 0;
+            }
+
+            .button{
+                margin: 0 30px;
+            }
+
+            #ui button {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+            }
+
+            button {
+                border: none;
+            }
+        </style>
+        <script>
+            "use strict";
+            const data = [
+                [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+                [6, 6, 6, 6, 6, 0, 0, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+                [6, 6, 6, 6, 6, 2, 0, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+                [6, 6, 6, 6, 6, 0, 0, 2, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+                [6, 6, 6, 0, 0, 2, 0, 0, 2, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+                [6, 6, 6, 0, 6, 0, 6, 6, 6, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+                [6, 0, 0, 0, 6, 0, 6, 6, 6, 0, 6, 6, 6, 6, 0, 0, 1, 1, 6, 6],
+                [6, 0, 2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 6, 6],
+                [6, 6, 6, 6, 6, 0, 6, 6, 6, 6, 0, 6, 0, 6, 0, 0, 1, 1, 6, 6],
+                [6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+                [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+            ];
+            let gc = null;
+            let px = 12;
+            let py = 8;
+
+            function init(){
+                gc = document.getElementById("soko").getContext("2d");
+                window.onkeydown = mykeydown;
+                repaint();
+            }
+
+            function mykeydown(e){
+                let dx0 = px;
+                let dy0 = py;
+                let dx1 = px;
+                let dy1 = py;
+                switch(e.keyCode){
+                    case 37:
+                        dx0--;
+                        dx1 -= 2;
+                        break;
+                    case 38:
+                        dy0--;
+                        dy1 -= 2;
+                        break;
+                    case 39:
+                        dx0++;
+                        dx1 += 2;
+                        break;
+                    case 40:
+                        dy0++;
+                        dy1 += 2;
+                        break;
+                }
+
+                if((data[dy0][dx0] & 0x2) == 0){
+                    px = dx0;
+                    py = dy0;
+                }else if((data[dy0][dx0] & 0x6) == 2){
+                    if((data[dy1][dx1] & 0x2) == 0){
+                        data[dy0][dx0] ^= 2;
+                        data[dy1][dx1] |= 2;
+                        px = dx0;
+                        py = dy0;
+                    }
+                }
+
+                repaint();
+            }
+
+            function repaint() {
+                const canvas = document.getElementById("soko");
+
+                // 画面サイズに合わせてキャンバスをリサイズ
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight - 250;
+
+                // 1マス40pxのマップを画面にフィットさせるスケールを計算
+                const mapWidth = data[0].length * 40;
+                const mapHeight = data.length * 40;
+
+                const scaleX = canvas.width / mapWidth;
+                const scaleY = canvas.height / mapHeight;
+
+                // 全体が収まるように小さい方を採用
+                const scale = Math.min(scaleX, scaleY);
+
+                // スケール後のマップサイズ
+                const scaledWidth = mapWidth * scale;
+                const scaledHeight = mapHeight * scale;
+
+                // キャンバスをスケール後のサイズに変更（余白ゼロ）
+                canvas.width = scaledWidth;
+                canvas.height = scaledHeight;
+
+                // 中央に配置（CSS）
+                canvas.style.position = "absolute";
+                canvas.style.left = `${(window.innerWidth - scaledWidth) / 2}px`;
+
+                // スケール適用
+                gc.setTransform(scale, 0, 0, scale, 0, 0);
+
+                // 背景クリア
+                gc.fillStyle = "black";
+                gc.fillRect(0, 0, mapWidth, mapHeight);
+
+                // マップ描画
+                for (let y = 0; y < data.length; y++) {
+                    for (let x = 0; x < data[y].length; x++) {
+                        if (data[y][x] & 0x1) {
+                            gc.drawImage(imgGoal, x * 40, y * 40, 40, 40);
+                        }
+                        if (data[y][x] & 0x2) {
+                            gc.drawImage(imgLuggage, x * 40, y * 40, 40, 40);
+                        }
+                        if (data[y][x] == 6) {
+                            gc.drawImage(imgWall, x * 40, y * 40, 40, 40);
+                        }
+                    }
+                }
+
+                // 主人公
+                gc.drawImage(imgWorker, px * 40, py * 40, 40, 40);
+            }
+        </script>
+    </head>
+    <body onload="init()">
+        <div id="game-container">
+            <canvas id="soko"></canvas>
+
+            <div id="ui">
+                <div class="row">
+                    <button onclick="mykeydown({keyCode: 38})">U</button>
+                </div>
+                <div class="row">
+                    <button class="button" onclick="mykeydown({keyCode: 37})">L</button>
+                    <button class="button" onclick="mykeydown({keyCode: 39})">R</button>
+                </div>
+                <div class="row">
+                    <button onclick="mykeydown({keyCode: 40})">D</button>
+                </div>
+            </div>
+        </div>
+        <img id="imgWall" src="img/imgWall.png" alt="カベ" style="display: none;">
+        <img id="imgGoal" src="img/imgGoal.png" alt="ゴール" style="display: none;">
+        <img id="imgWorker" src="img/imgWorker.png" alt="ヒト" style="display: none;">
+        <img id="imgLuggage" src="img/imgLuggage.png" alt="ニモツ" style="display: none;">
+    </body>
+</html>
