@@ -19,11 +19,10 @@
                 height: 100vh;
             }
             #ui {
-                width: 300px;
                 position: absolute;
                 left: 50%;
-                bottom: 15%;
                 transform: translateX(-50%);
+                width: 300px;
                 text-align: center;
             }
 
@@ -162,6 +161,22 @@
 
                 // 主人公
                 gc.drawImage(imgWorker, px * 40, py * 40, 40, 40);
+
+                const ui = document.getElementById("ui");
+
+                // 画面の高さ
+                const screenHeight = window.innerHeight;
+
+                // canvas の下端位置
+                const canvasBottom = canvas.offsetTop + canvas.height;
+
+                // 下の空白スペースの高さ
+                const emptySpace = screenHeight - canvasBottom;
+
+                // 空白スペースの中央に UI を配置
+                const uiTop = canvasBottom + (emptySpace / 2) - (ui.offsetHeight / 2);
+
+                ui.style.top = uiTop + "px";
             }
         </script>
     </head>
